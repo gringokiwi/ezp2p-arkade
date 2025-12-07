@@ -237,9 +237,6 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
       }
     }
   );
-
-  // Clear session state
-  ctx.session!.state = undefined;
 }
 
 // Error handling
