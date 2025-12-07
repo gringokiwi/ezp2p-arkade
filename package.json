@@ -1,10 +1,8 @@
 {
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev:bot": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "pm2 start ecosystem.config.js",
-    "stop": "pm2 stop all",
-    "logs": "pm2 logs"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@arkade-os/sdk": "^0.3.8",
@@ -12,15 +10,14 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "qrcode": "^1.5.4",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
-    "@types/qrcode": "^1.5.6",
     "nodemon": "^3.1.11",
+    "pm2": "^6.0.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
