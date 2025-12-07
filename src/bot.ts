@@ -66,7 +66,7 @@ bot.command('start', async (ctx: BotContext) => {
       `👾 Arkade Address: ${address}\n\n` +
       `🔗 Payment ID: ${paymentId}`;
     await ctx.reply(validatingMessage);
-    const { success, message } = await axios.post(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}/api/validate`, {
+    const { success, message } = (await axios.post(`https://ezp2p-arkade-production.up.railway.app/api/validate`, {
       address,
       proof: {
         amount,
@@ -75,7 +75,7 @@ bot.command('start', async (ctx: BotContext) => {
     }).then(res => res.data as {
       success: boolean,
       message: string
-    })
+    }))
     if (success) {
       const validatedMessage =
         `✅ Validated payment!\n\n` +
@@ -218,7 +218,7 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
     `👾 Arkade Address: ${address}\n\n` +
     `Scan QR or click button below to pay 👇`;
 
-  const validateUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}?amount=${amountGbpCents}&address=${address}`
+  const validateUrl = `https://ezp2p-arkade-production.up.railway.app?amount=${amountGbpCents}&address=${address}`
 
   await ctx.replyWithPhoto(
     Input.fromBuffer(qrBuffer, 'revolut-payment.png'),
