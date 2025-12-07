@@ -39,28 +39,57 @@ bot.use((ctx, next) => {
   return next();
 });
 
-// Start command
-bot.command('start', async (ctx) => {
-  ctx.session!.state = ConversationState.ADDRESS;
-
-  await ctx.reply(
-    'Welcome! 👋\n\nClick the button below to start purchasing Bitcoin.',
-    Markup.keyboard([['Buy Bitcoin']])
-      .oneTime()
-      .resize()
-  );
-});
-
-// Cancel command
-bot.command('cancel', async (ctx) => {
-  ctx.session!.state = undefined;
-  ctx.session!.address = undefined;
-  ctx.session!.amountSats = undefined;
-
-  await ctx.reply(
-    'Operation cancelled. Use /start to begin again.',
-    Markup.removeKeyboard()
-  );
+// Start + validate
+bot.command('start', async (ctx: BotContext) => {
+  const payload = (ctx as unknown as { payload: string })?.payload;
+  try {
+    if (!payload?.length || payload.length <= 5) {
+      ctx.session!.state = ConversationState.ADDRESS;
+      await ctx.reply(
+        'Welcome! 👋\n\nClick the button below to start purchasing Bitcoin.',
+        Markup.keyboard([['Buy Bitcoin']])
+          .oneTime()
+          .resize()
+      );
+      return
+    }
+    const paymentId = payload;
+    const address = (ctx as unknown as { session: { address: string } }).session.address!;
+    const amount = (ctx as unknown as { session: { amountSats: number } }).session.amountSats!;
+    if (!amount) {
+      throw new Error(`Couldn't decode`)
+    }
+    // Send validation message
+    const validatingMessage =
+      `⏳ Validating payment...\n\n` +
+      `💷 Amount (GBP): £${Number(amount) / 100}\n\n` +
+      `👾 Arkade Address: ${address}\n\n` +
+      `🔗 Payment ID: ${paymentId}`;
+    await ctx.reply(validatingMessage);
+    const { success, message } = await axios.post(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}/api/validate`, {
+      address,
+      proof: {
+        amount,
+        paymentId
+      }
+    }).then(res => res.data as {
+      success: boolean,
+      message: string
+    })
+    if (success) {
+      const validatedMessage =
+        `✅ Validated payment!\n\n` +
+        message;
+      await ctx.reply(validatedMessage);
+    } else {
+      const validatedMessage =
+        `⚠️ Duplicate payment!\n\n` +
+        message;
+      await ctx.reply(validatedMessage);
+    }
+  } catch (error) {
+    await ctx.reply('❌ Could not validate proof');
+  }
 });
 
 // Handle text messages based on conversation state
@@ -212,47 +241,6 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
   // Clear session state
   ctx.session!.state = undefined;
 }
-
-// Validate
-bot.command('validate', async (ctx: BotContext) => {
-  try {
-    const decoded = Buffer.from(((ctx.message as { text: string }).text)?.trim(), 'hex').toString('utf8');
-    const [address, amount, paymentId] = decoded.split(';');
-    if (!amount) {
-      throw new Error(`Couldn't decode`)
-    }
-    // Send validation message
-    const validatingMessage =
-      `⏳ Validating payment...\n\n` +
-      `💷 Amount (GBP): £${Number(amount) / 100}\n\n` +
-      `👾 Arkade Address: ${address}\n\n` +
-      `🔗 Payment ID: ${paymentId}`;
-    await ctx.reply(validatingMessage);
-    const { success, message } = await axios.post(`${process.env.RAILWAY_PUBLIC_DOMAIN}/api/validate`, {
-      address,
-      proof: {
-        amount,
-        paymentId
-      }
-    }).then(res => res.data as {
-      success: boolean,
-      message: string
-    })
-    if (success) {
-      const validatedMessage =
-        `✅ Validated payment!\n\n` +
-        message;
-      await ctx.reply(validatedMessage);
-    } else {
-      const validatedMessage =
-        `⚠️ Duplicate payment!\n\n` +
-        message;
-      await ctx.reply(validatedMessage);
-    }
-  } catch (error) {
-    await ctx.reply('❌ Could not validate proof');
-  }
-});
 
 // Error handling
 bot.catch((err, ctx) => {

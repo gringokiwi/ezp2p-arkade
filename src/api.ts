@@ -29,6 +29,8 @@ app.post('/api/validate', async (req, res) => {
     return res.json({
       success: false,
       message: `Payment ID already used in transaction ${match}`,
+      paymentId,
+      txid: match
     })
   }
   const price = await axios.get('https://mempool.space/api/v1/prices').then(res => res.data as {
@@ -48,6 +50,10 @@ app.post('/api/validate', async (req, res) => {
   res.json({
     success: true,
     message: `Sent ${amountSats} sats (${amountGbp} GBP) to ${address} in transaction ${txid}`,
+    paymentId,
+    txid,
+    amountSats,
+    amountGbp,
   });
 });
 
