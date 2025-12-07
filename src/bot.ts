@@ -216,7 +216,7 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
 async function handleValidateState(ctx: BotContext, proofHex: string) {
   try {
     const decoded = Buffer.from(proofHex, 'hex').toString('utf8');
-    const [address, amount, paymentId] = decoded.split(',');
+    const [address, amount, paymentId] = decoded.split(';');
     if (!amount) {
       throw new Error(`Couldn't decode`)
     }
