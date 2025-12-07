@@ -57,7 +57,8 @@ bot.command('start', async (ctx: BotContext) => {
     const address = (ctx as unknown as { session: { address: string } }).session.address!;
     const amount = (ctx as unknown as { session: { amountSats: number } }).session.amountSats!;
     if (!amount) {
-      throw new Error(`Couldn't decode`)
+      await ctx.reply('❌ Could not link your transaction. Please return to /start');
+      return
     }
     // Send validation message
     const validatingMessage =
@@ -81,11 +82,13 @@ bot.command('start', async (ctx: BotContext) => {
         `✅ Validated payment!\n\n` +
         message;
       await ctx.reply(validatedMessage);
+      return
     } else {
       const validatedMessage =
         `⚠️ Duplicate payment!\n\n` +
         message;
       await ctx.reply(validatedMessage);
+      return
     }
   } catch (error) {
     await ctx.reply('❌ Could not validate proof');
