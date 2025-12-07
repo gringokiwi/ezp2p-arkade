@@ -79,7 +79,7 @@ bot.on('text', async (ctx) => {
       await handleConfirmState(ctx, text);
       break;
     default:
-      await handleValidateState(ctx, text)
+      await ctx.reply('Please use /start to begin.');
   }
 });
 
@@ -213,9 +213,10 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
   ctx.session!.state = undefined;
 }
 
-async function handleValidateState(ctx: BotContext, proofHex: string) {
+// Validate
+bot.command('validate', async (ctx: BotContext) => {
   try {
-    const decoded = Buffer.from(proofHex, 'hex').toString('utf8');
+    const decoded = Buffer.from(((ctx.message as { text: string }).text)?.trim(), 'hex').toString('utf8');
     const [address, amount, paymentId] = decoded.split(';');
     if (!amount) {
       throw new Error(`Couldn't decode`)
@@ -227,7 +228,7 @@ async function handleValidateState(ctx: BotContext, proofHex: string) {
       `👾 Arkade Address: ${address}\n\n` +
       `🔗 Payment ID: ${paymentId}`;
     await ctx.reply(validatingMessage);
-    const { success, message } = await axios.post('process.env.RAILWAY_PUBLIC_DOMAIN/api/validate', {
+    const { success, message } = await axios.post(`${process.env.RAILWAY_PUBLIC_DOMAIN}/api/validate`, {
       address,
       proof: {
         amount,
@@ -244,14 +245,14 @@ async function handleValidateState(ctx: BotContext, proofHex: string) {
       await ctx.reply(validatedMessage);
     } else {
       const validatedMessage =
-        `❌ Could not validate payment\n\n` +
+        `⚠️ Duplicate payment!\n\n` +
         message;
       await ctx.reply(validatedMessage);
     }
   } catch (error) {
-    await ctx.reply('Please use /start to begin.');
+    await ctx.reply('❌ Could not validate proof');
   }
-}
+});
 
 // Error handling
 bot.catch((err, ctx) => {

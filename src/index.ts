@@ -7,7 +7,7 @@ async function main() {
   try {
     // Start both services
     await Promise.all([
-      startBot(),
+      // startBot(),
       startServer()
     ]);
 

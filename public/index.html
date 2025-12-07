@@ -117,9 +117,11 @@
           }
           updateState('proof', proof)
           statusDiv.textContent = "Returning to Telegram..."
-          const proofHex = Buffer.from([address, amount, proof.paymentId].join(";"), 'utf8').toString('hex');
+          const proofHex = Array.from(
+            new TextEncoder().encode([state.address, state.amount, proof.paymentId].join(";"))
+          ).map(byte => byte.toString(16).padStart(2, '0')).join('');
           updateState('proofHex', proofHex)
-          window.location.href = `https://t.me/@ezP2P_trade_bot?start=${proofHex}`
+          window.location.href = `https://t.me/ezP2P_trade_bot?validate=${proofHex}`
         });
       } catch (error) {
         statusDiv.textContent = "Generate Proof Failed"
