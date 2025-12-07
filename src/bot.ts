@@ -18,7 +18,7 @@ interface BotContext extends Context {
   session?: {
     state?: ConversationState;
     address?: string;
-    amountSats?: number;
+    amountGbpCents?: number;
   };
 }
 
@@ -55,7 +55,7 @@ bot.command('start', async (ctx: BotContext) => {
     }
     const paymentId = payload;
     const address = (ctx as unknown as { session: { address: string } }).session.address!;
-    const amount = (ctx as unknown as { session: { amountSats: number } }).session.amountSats!;
+    const amount = (ctx as unknown as { session: { amountGbpCents: number } }).session.amountGbpCents!;
     if (!amount) {
       await ctx.reply('❌ Could not link your transaction. Please return to /start');
       return
@@ -182,7 +182,6 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
 
   // Get saved address from session
   const address = ctx.session!.address;
-  ctx.session!.amountSats = amountSats;
 
   // Calculate GBP amount
   const price = await axios.get('https://mempool.space/api/v1/prices').then(res => res.data as {
@@ -200,6 +199,8 @@ async function handleConfirmState(ctx: BotContext, amountSatsText: string) {
     );
     return;
   }
+
+  ctx.session!.amountGbpCents = amountGbpCents;
 
   const paymentUrl = `https://revolut.me/jamesscaur?currency=GBP&amount=${amountGbpCents}`;
 
