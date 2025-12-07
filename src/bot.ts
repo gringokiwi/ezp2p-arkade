@@ -44,6 +44,7 @@ bot.command('start', async (ctx: BotContext) => {
   const payload = (ctx as unknown as { payload: string })?.payload;
   try {
     if (!payload?.length || payload.length <= 5) {
+      ctx.session!.state = undefined;
       ctx.session!.state = ConversationState.ADDRESS;
       await ctx.reply(
         'Welcome! 👋\n\nClick the button below to start purchasing Bitcoin.',
@@ -90,6 +91,7 @@ bot.command('start', async (ctx: BotContext) => {
       await ctx.reply(validatedMessage);
       return
     }
+    ctx.session!.state = undefined;
   } catch (error) {
     await ctx.reply('❌ Could not validate proof');
   }
