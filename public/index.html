@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>ezP2P</title>
+  <style>
+    body {
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    #container {
+      max-width: 450px;
+      padding: 0.5rem 1rem;
+      background: lightblue;
+      margin: 1rem auto;
+    }
+
+    h1 {
+      margin: 1rem 0;
+    }
+
+    #statusDiv {
+      margin: 1rem 0;
+      font-style: italic;
+    }
+
+    #stateDiv {
+      margin: 1rem 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <h1>ezP2P</h1>
+    <div id="statusDiv">Initializing...</div>
+    <div id="stateDiv"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const stateDiv = document.getElementById('stateDiv');
+
+    const state = {};
+
+    const updateState = (key, value) => {
+      state[key] = value;
+      stateDiv.textContent = JSON.stringify(state, null, 2)
+    }
+
+    const throwError = (error) => {
+      updateState('errors', [...(state.errors?.length ? state.errors : []), error.message])
+    }
+
+    try {
+      const amount = Number(params.get('amount'));
+      if (amount < 1) {
+        throw new Error('Invalid amount')
+      }
+      updateState('amount', amount)
+    } catch (error) {
+      throwError(error)
+    }
+
+    try {
+      const address = String(params.get('address'));
+      if (address === 'null' || address.length < 1) {
+        throw new Error('Invalid address')
+      }
+      updateState('address', address)
+    } catch (error) {
+      throwError(error)
+    }
+
+    async function generateProof() {
+      if (status.amount && status.address) {
+        return
+      }
+      if (!state.peerAuthVersion) {
+        try {
+          statusDiv.textContent = "Connecting..."
+          if (typeof window.zktls === 'undefined') {
+            throw new Error('PeerAuth extension not available')
+          }
+          const isConnected = await window.zktls.requestConnection();
+          if (!isConnected) {
+            throw new Error('User denied connection')
+          }
+          const version = await window.zktls.getVersion();
+          updateState('peerAuthVersion', version);
+          statusDiv.textContent = "Connected"
+          connected = true;
+        } catch (error) {
+          statusDiv.textContent = "PeerAuth Connection Failed"
+          throwError(error)
+        }
+      }
+      if (!state.peerAuthVersion) {
+        return
+      }
+      try {
+        statusDiv.textContent = "Generating..."
+        window.zktls.authenticate({
+          actionType: 'transfer_revolut',
+          platform: 'revolut'
+        });
+        const unsubscribe = await window.zktls.onMetadataMessage(async (data) => {
+          const proof = data.metadata.find(entry => Math.abs(entry.amount) === state.amount && entry.currency === 'GBP' && entry.recipient === 'jamesscaur')
+          if (!proof) {
+            throw new Error('No matching payment found')
+          }
+          updateState('proof', proof)
+          statusDiv.textContent = "Returning to Telegram..."
+          const proofHex = Buffer.from([address, amount, proof.paymentId], 'utf8').toString('hex');
+          updateState('proofHex', proofHex)
+          window.location.href = `https://t.me/@ezP2P_trade_bot?start=${proofHex}`
+        });
+      } catch (error) {
+        statusDiv.textContent = "Generate Proof Failed"
+        throwError(error)
+      }
+    }
+
+    window.addEventListener('load', () => {
+      // Small delay to ensure everything is loaded
+      setTimeout(generateProof, 100);
+    });
+  </script>
+</body>
+
+</html>
